@@ -4,7 +4,7 @@ It parses logs for the Timestamp, Blocked/Allowed status, Source MAC, Source IP,
 
 ## ufw logging verbosity 
 ufw has 4 levels of verbosity: low (default), medium, high, full 
-Set ufw's verbosity: 
+My preference is Medium verbosity. To set ufw's verbosity: 
 ```Bash
 sudo ufw logging medium
 ```
