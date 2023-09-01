@@ -20,7 +20,7 @@ watch -n5 "./ufw_log_parser.sh | tail -n 30"
 ```
 
 Example use cases:
-* Validate VLAN proper segmentation.
+* Validate proper VLAN segmentation.
 * Determining if a network route is open to a system. 
 * Parse UFW logs while troubleshooting or performing incident response.  
 * See when your system is being poked and scanned at the local ☕ coffee shop.
