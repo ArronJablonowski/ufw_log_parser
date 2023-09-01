@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: 
-#   ./ufw_log_monitor.sh | tail -n 25 
-#   watch -n 2 "./ufw_log_monitor.sh | tail -n 25 "
+#   ./ufw_log_parser.sh | tail -n 30 
+#   watch -n 2 "./ufw_log_monitor.sh | tail -n 30 "
 
 #ufw log file 
 #infile="/var/log/ufw.log"
