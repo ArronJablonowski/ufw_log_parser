@@ -10,7 +10,7 @@ It parses ufw.log events for:
 ## ufw logging verbosity 
 ufw has 4 levels of verbosity: low (default), medium, high, & full
  
-My ufw logging verbosity preference for a unix workstation is 'medium'. This may be too verbose on some servers. 
+My ufw logging verbosity preference for a unix workstation is 'medium'. *This may be too verbose on some servers. 
 
 To set ufw's verbosity: 
 ```Bash
