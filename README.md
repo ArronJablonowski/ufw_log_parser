@@ -4,7 +4,8 @@ It parses ufw.log events for:
 * Timestamp 
 * Blocked / Allowed status
 * Source MAC and IP
-* Destination IP and Port.    
+* Destination IP and Port.
+* UDP/TCP    
 
 ## ufw logging verbosity 
 ufw has 4 levels of verbosity: low (default), medium, high, & full
