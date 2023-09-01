@@ -8,7 +8,7 @@ It parses ufw.log events for:
 * UDP/TCP    
 
 ## ufw logging verbosity 
-ufw has 4 levels of verbosity: low (default), medium, high, & full
+ufw has 5 levels of verbosity: off, low (default), medium, high, & full
  
 My ufw logging verbosity preference for a unix workstation is 'medium'. *This may be too verbose on some servers. 
 
