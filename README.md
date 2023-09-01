@@ -27,7 +27,7 @@ Parse the last 30 entries in UFW log:
 ./ufw_log_parser.sh | tail -n 30
 ```
 
-Watch a running feed of UFW logs: 
+Watch a running feed of UFW logs, refreshing every 5 seconds: 
 ```Bash
 watch -n5 "./ufw_log_parser.sh | tail -n 30"
 ```
