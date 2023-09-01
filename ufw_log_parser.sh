@@ -4,9 +4,9 @@
 #   watch -n 2 "./ufw_log_monitor.sh | tail -n 30 "
 
 #ufw log file 
-#infile="/var/log/ufw.log"
 infile=/var/log/ufw.log
-localHostName=$( hostname )
+# local host name ( Unused currently ) 
+# localHostName=$( hostname )
 
 
 #sort log file 
