@@ -67,7 +67,3 @@ while read line; do
         esac
     fi
 done <  "$infile"
-
-
-# 00:e0:67:21:cb:09
-# !unknown mac addr! 
