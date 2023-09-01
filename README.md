@@ -22,12 +22,12 @@ Parse entire 'ufw.log' file:
 ./ufw_log_parser.sh
 ```
 
-Parse the last 30 entries in UFW log:
+Parse the last 30 entries in ufw.log:
 ```Bash
 ./ufw_log_parser.sh | tail -n 30
 ```
 
-Watch a running feed of UFW logs, refreshing every 5 seconds: 
+Watch a running feed of ufw.log, refreshing every 5 seconds: 
 ```Bash
 watch -n5 "./ufw_log_parser.sh | tail -n 30"
 ```
