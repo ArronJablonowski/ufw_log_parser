@@ -9,7 +9,7 @@ It parses logs for:
 ## ufw logging verbosity 
 ufw has 4 levels of verbosity: low (default), medium, high, & full
  
-My preference is Medium verbosity. To set ufw's verbosity: 
+My ufw logging verbosity preference is 'medium'. To set ufw's verbosity: 
 ```Bash
 sudo ufw logging medium
 ```
