@@ -3,7 +3,7 @@ Uncomplicated Firewall log parser displays UFW events in an easy to view/underst
 It parses logs for the Timestamp, Blocked/Allowed status, Source MAC, Source IP, and Destination IP and Port.    
 
 ## ufw logging verbosity 
-ufw has 4 levels of verbosity: low (default), medium, high, and full
+ufw has 4 levels of verbosity: low (default), medium, high, & full
  
 My preference is Medium verbosity. To set ufw's verbosity: 
 ```Bash
