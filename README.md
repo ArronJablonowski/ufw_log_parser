@@ -1,4 +1,4 @@
-# ufw_log_parser
+# ufw_log_parser.sh
 Uncomplicated Firewall log parser displays UFW events in an easy to view/understand format. 
 It parses logs for:
 * Timestamp 
