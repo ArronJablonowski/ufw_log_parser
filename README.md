@@ -11,7 +11,7 @@ It parses ufw.log events for:
 ufw has 5 levels of verbosity: 
 * off - logging is disabled 
 * low (default) - Logs blocked packets that do not match the current firewall ruleset. Rate limited. 
-* medium - All logs from 'low' plus logs for invalid packets, and new connections. Rate limited.  
+* medium - All logs from 'low' plus logs for invalid packets, and new connections/allows. Rate limited.  
 * high - All logs from 'medium' with less rate limiting than the medium setting.   
 * full - Similar to 'high' without rate limits. 
  
