@@ -15,7 +15,7 @@ sudo ufw logging medium
 ```
 
 
-## Usage
+## ufw_log_parser.sh Usage
 
 Parse entire 'ufw.log' file:
 ```Bash
