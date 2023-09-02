@@ -1,6 +1,8 @@
 #!/bin/bash
+#
 # description:
 #       This Script parses UFW logs into a more readable and easily understood format.
+#
 # Usage: 
 #       ./ufw_log_parser.sh                              # parse the current UFW log
 #       ./ufw_log_parser.sh | tail -n 30                 # parse the current UFW log and tail the last x number 
