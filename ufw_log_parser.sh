@@ -1,7 +1,16 @@
 #!/bin/bash
+# description:
+#       This Script parses UFW logs into a more readable and easily understood format.
 # Usage: 
-#   ./ufw_log_parser.sh | tail -n 30 
-#   watch -n 2 "./ufw_log_monitor.sh | tail -n 30 "
+#       ./ufw_log_parser.sh                              # parse the current UFW log
+#       ./ufw_log_parser.sh | tail -n 30                 # parse the current UFW log and tail the last x number 
+#       watch -n 2 "./ufw_log_monitor.sh | tail -n 30 "  # watch the newest UFW Allow/Block events
+#
+# about: 
+#	    ufw_log_parser: https://github.com/ArronJablonowski/ufw_log_parser
+# 	    Author: Arron Jablonowski  	
+#       Last Updated: 2023.9.2
+#
 
 #ufw log file 
 infile=/var/log/ufw.log
