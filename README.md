@@ -48,4 +48,9 @@ Example use cases:
 * Watch your Chrome cast, etc. constantly scanning your systems. 
 * Hours of entertainment at IT/Security conferences. 
 
+If you want the script to run faster on a large log file, and you don't care about ufw's historic logs, you can reset the log: 
+```Bash
+sudo truncate -s 0 /var/log/ufw.log
+```
+
 ![alt text](https://github.com/ArronJablonowski/ufw_log_parser/blob/main/ufw_parser.png?raw=true)
