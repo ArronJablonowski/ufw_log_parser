@@ -1,80 +1,319 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# description:
-#       This Script parses UFW logs into a more readable and easily understood format.
-#
-# Usage: 
-#       ./ufw_log_parser.sh                              # parse the current UFW log
-#       ./ufw_log_parser.sh | tail -n 30                 # parse the current UFW log and tail the last x number 
-#       watch -n 2 "./ufw_log_monitor.sh | tail -n 30 "  # watch the newest UFW Allow/Block events
-#
-# about: 
-#	    ufw_log_parser: https://github.com/ArronJablonowski/ufw_log_parser
-# 	    Author: Arron Jablonowski  	
-#       Last Updated: 2023.9.2
-#
+# Parse UFW logs into readable text, JSON Lines, or CSV.
 
-#ufw log file 
-infile=/var/log/ufw.log
-# local host name ( Unused currently ) 
-# localHostName=$( hostname )
+set -euo pipefail
 
+default_infile=/var/log/ufw.log
+format=text
+input=
 
-#sort log file 
-while read line; do
-    logtime=$(echo $line | cut -c 1-15 ) 
-    if [[ $line == *"UFW BLOCK"* ]]; then 
-        case $line in
-        *"DPT"*)
-            ip="${line##*SRC=}"
-            ip="${ip%% *}"
-            dst="${line##*DST=}"
-            dst="${dst%% *}"
-            port="${line##*DPT=}"
-            port="$dst:${port%% *}"
-            proto="${line##*PROTO=}"
-            proto="${proto%% *}"
-            mac="${line##*MAC=}"
-            mac="${mac%% *}"
-            macAdd="src: $(echo $mac | cut -d ':' -f7,8,9,10,11,12)"  
-            if [[ -z "${mac// }" ]]; then 
-                macAdd='src: unknown mac addr ' 
-            fi 
-            echo "[ $logtime ] [!BLOCK!] [ $macAdd $ip --X $port $proto ]" 
-            ;;
-        *"DST"*)
-            ip="${line##*SRC=}"
-            ip="${ip%% *}"
-            dst="${line##*DST=}"
-            dst="${dst%% *}"
-            proto="${line##*PROTO=}"
-            proto="${proto%% *}"
-            mac="${line##*MAC=}"
-            mac="${mac%% *}"
-            macAdd="[Source MAC: $(echo $mac | cut -d ':' -f7,8,9,10,11,12)]"
-            echo "[ $logtime ] $macAdd mDNS:$ip ->X $dst"
-            ;;    
-        esac
-    
-    elif [[ $line == *"UFW ALLOW"* ]]; then
-        case $line in
-        *"DPT"*)
-            ip="${line##*SRC=}"
-            ip="${ip%% *}"
-            dst="${line##*DST=}"
-            dst="${dst%% *}"
-            port="${line##*DPT=}"
-            port="$dst:${port%% *}"
-            proto="${line##*PROTO=}"
-            proto="${proto%% *}"
-            mac="${line##*MAC=}"
-            mac="${mac%% *}"
-            macAdd="src: $(echo $mac | cut -d ':' -f7,8,9,10,11,12)"  
-            if [[ "${#macAdd}" -le 17  ]]; then 
-                macAdd='src: lo:ca:lh:os:t    ' 
-            fi 
-            echo "[ $logtime ] [ allow ] [ $macAdd $ip --> $port $proto ]" 
-            ;;   
-        esac
+collect_interface_macs() {
+    if [[ -n "${UFW_LOG_PARSER_IFACE_MACS:-}" ]]; then
+        printf '%s\n' "$UFW_LOG_PARSER_IFACE_MACS"
+        return
     fi
-done <  "$infile"
+
+    if command -v ip >/dev/null 2>&1; then
+        ip -o link show 2>/dev/null | awk '
+            {
+                iface = $2;
+                sub(/:$/, "", iface);
+                for (i = 1; i <= NF; i++) {
+                    if ($i == "link/ether" && (i + 1) <= NF) {
+                        print iface "=" $(i + 1);
+                    }
+                }
+            }
+        '
+        return
+    fi
+
+    if command -v ifconfig >/dev/null 2>&1; then
+        ifconfig -a 2>/dev/null | awk '
+            /^[A-Za-z0-9_.:-]+:/ {
+                iface = $1;
+                sub(/:$/, "", iface);
+            }
+            /^[[:space:]]*ether[[:space:]]/ && iface != "" {
+                print iface "=" $2;
+            }
+        '
+    fi
+}
+
+usage() {
+    cat <<'EOF'
+Usage:
+  ufw_log_parser.sh [--text|--jsonl|--csv] [logfile|-]
+
+Examples:
+  ufw_log_parser.sh
+  ufw_log_parser.sh /var/log/ufw.log
+  tail -n 30 /var/log/ufw.log | ufw_log_parser.sh -
+  tail -F /var/log/ufw.log | ufw_log_parser.sh --jsonl -
+
+Options:
+  --text       Human-readable output. This is the default.
+  --jsonl      Emit one JSON object per parsed UFW event.
+  --csv        Emit CSV with a header row.
+  -h, --help   Show this help.
+EOF
+}
+
+while (($#)); do
+    case "$1" in
+        --text)
+            format=text
+            ;;
+        --jsonl|--json)
+            format=jsonl
+            ;;
+        --csv)
+            format=csv
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -)
+            if [[ -n "$input" ]]; then
+                printf 'Only one input file may be provided.\n\n' >&2
+                usage >&2
+                exit 2
+            fi
+            input=$1
+            ;;
+        -*)
+            printf 'Unknown option: %s\n\n' "$1" >&2
+            usage >&2
+            exit 2
+            ;;
+        *)
+            if [[ -n "$input" ]]; then
+                printf 'Only one input file may be provided.\n\n' >&2
+                usage >&2
+                exit 2
+            fi
+            input=$1
+            ;;
+    esac
+    shift
+done
+
+if (($#)); then
+    if [[ -n "$input" || $# -gt 1 ]]; then
+        printf 'Only one input file may be provided.\n\n' >&2
+        usage >&2
+        exit 2
+    fi
+    input=$1
+fi
+
+if [[ -z "$input" ]]; then
+    input=$default_infile
+fi
+
+if [[ "$input" != "-" && ! -r "$input" ]]; then
+    printf 'Cannot read UFW log: %s\n' "$input" >&2
+    exit 1
+fi
+
+iface_macs=$(collect_interface_macs)
+iface_macs=${iface_macs//$'\n'/;}
+
+awk -v format="$format" -v iface_macs="$iface_macs" '
+BEGIN {
+    OFS = ",";
+    split(iface_macs, mac_lines, ";");
+    for (i in mac_lines) {
+        if (mac_lines[i] == "") {
+            continue;
+        }
+        split(mac_lines[i], mac_pair, "=");
+        if (mac_pair[1] != "" && mac_pair[2] != "") {
+            local_macs[mac_pair[1]] = mac_pair[2];
+        }
+    }
+    if (format == "csv") {
+        print "timestamp,action,interface_in,interface_out,src_mac,src_ip,dst_ip,src_port,dst_port,protocol,event,length,ttl,raw";
+    }
+}
+
+/\[UFW / {
+    reset_event();
+    raw = $0;
+    ts = substr($0, 1, 15);
+
+    if ($0 ~ /\[UFW BLOCK\]/) {
+        action = "BLOCK";
+    } else if ($0 ~ /\[UFW ALLOW\]/) {
+        action = "ALLOW";
+    } else if ($0 ~ /\[UFW AUDIT\]/) {
+        action = "AUDIT";
+    } else {
+        next;
+    }
+
+    for (i = 1; i <= NF; i++) {
+        if ($i ~ /^[A-Z0-9_]+=/) {
+            key = $i;
+            sub(/=.*/, "", key);
+            value = $i;
+            sub(/^[^=]*=/, "", value);
+            fields[key] = value;
+        }
+    }
+
+    src = get_field("SRC");
+    dst = get_field("DST");
+    spt = get_field("SPT");
+    dpt = get_field("DPT");
+    proto = get_field("PROTO");
+    in_if = get_field("IN");
+    out_if = get_field("OUT");
+    pkt_len = get_field("LEN");
+    ttl = get_field("TTL");
+    src_mac = source_mac(get_field("MAC"), in_if, out_if, src, dst);
+    event = event_type(proto, spt, dpt, dst);
+
+    if (format == "jsonl") {
+        print_json();
+    } else if (format == "csv") {
+        print_csv();
+    } else {
+        print_text();
+    }
+}
+
+function reset_event(    k) {
+    delete fields;
+    raw = ts = action = src = dst = spt = dpt = proto = in_if = out_if = "";
+    pkt_len = ttl = src_mac = event = "";
+}
+
+function get_field(name) {
+    return (name in fields) ? fields[name] : "";
+}
+
+function source_mac(mac, in_if, out_if, src_ip, dst_ip,    part) {
+    if (mac == "") {
+        if (out_if != "" && in_if == "" && out_if in local_macs) {
+            return local_macs[out_if];
+        }
+        if (in_if == "lo" || src_ip == "127.0.0.1" || dst_ip == "127.0.0.1" || src_ip == "::1" || dst_ip == "::1") {
+            return "local";
+        }
+        return "unknown";
+    }
+
+    split(mac, part, ":");
+    if (length(part[7]) && length(part[8]) && length(part[9]) && length(part[10]) && length(part[11]) && length(part[12])) {
+        return part[7] ":" part[8] ":" part[9] ":" part[10] ":" part[11] ":" part[12];
+    }
+
+    return mac;
+}
+
+function event_type(proto, spt, dpt, dst_ip) {
+    if (proto == "ICMP" || proto == "ICMPv6") {
+        return proto;
+    }
+    if (proto == "UDP" && (spt == "5353" || dpt == "5353" || dst_ip == "224.0.0.251" || dst_ip == "ff02::fb")) {
+        return "mDNS";
+    }
+    if (dpt != "") {
+        return "port";
+    }
+    return "packet";
+}
+
+function print_text(    marker, arrow, port, direction, extras) {
+    marker = (action == "BLOCK") ? "!BLOCK!" : tolower(action);
+    arrow = (action == "BLOCK") ? "--X" : "-->";
+    port = (dpt == "") ? dst : dst ":" dpt;
+    direction = src " " arrow " " port;
+
+    if (spt != "") {
+        extras = " spt:" spt;
+    } else {
+        extras = "";
+    }
+    if (in_if != "") {
+        extras = extras " in:" in_if;
+    }
+    if (out_if != "") {
+        extras = extras " out:" out_if;
+    }
+    if (event != "port") {
+        extras = extras " event:" event;
+    }
+
+    printf "[ %s ] [ %s ] [ src-mac: %s %s %s%s ]\n", ts, marker, src_mac, direction, proto, extras;
+}
+
+function print_csv() {
+    print csv(ts), csv(action), csv(in_if), csv(out_if), csv(src_mac), csv(src), csv(dst), csv(spt), csv(dpt), csv(proto), csv(event), csv(pkt_len), csv(ttl), csv(raw);
+}
+
+function print_json() {
+    printf "{";
+    json_pair("timestamp", ts, 0);
+    json_pair("action", action, 1);
+    json_pair("interface_in", in_if, 1);
+    json_pair("interface_out", out_if, 1);
+    json_pair("src_mac", src_mac, 1);
+    json_pair("src_ip", src, 1);
+    json_pair("dst_ip", dst, 1);
+    json_pair("src_port", spt, 1);
+    json_pair("dst_port", dpt, 1);
+    json_pair("protocol", proto, 1);
+    json_pair("event", event, 1);
+    json_pair("length", pkt_len, 1);
+    json_pair("ttl", ttl, 1);
+    json_pair("raw", raw, 1);
+    printf "}\n";
+}
+
+function json_pair(key, value, comma) {
+    if (comma) {
+        printf ",";
+    }
+    printf "\"%s\":\"%s\"", json_escape(key), json_escape(value);
+}
+
+function json_escape(value,    out, i, char) {
+    out = "";
+    for (i = 1; i <= length(value); i++) {
+        char = substr(value, i, 1);
+        if (char == "\\") {
+            out = out "\\\\";
+        } else if (char == "\"") {
+            out = out "\\\"";
+        } else if (char == "\b") {
+            out = out "\\b";
+        } else if (char == "\f") {
+            out = out "\\f";
+        } else if (char == "\n") {
+            out = out "\\n";
+        } else if (char == "\r") {
+            out = out "\\r";
+        } else if (char == "\t") {
+            out = out "\\t";
+        } else {
+            out = out char;
+        }
+    }
+    return out;
+}
+
+function csv(value,    escaped) {
+    escaped = value;
+    gsub(/"/, "\"\"", escaped);
+    return "\"" escaped "\"";
+}
+' "$input"
