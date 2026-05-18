@@ -104,17 +104,6 @@ If you truly do not need historical logs, rotate or truncate the UFW log through
 sudo truncate -s 0 /var/log/ufw.log
 ```
 
-## Tests
-
-Run the fixture-based test suite:
-
-```bash
-./tests/run_tests.sh
-```
-
-The tests cover text output, stdin parsing, JSON Lines, CSV, mDNS, loopback traffic, and blocked ICMP packets without a MAC address.
-They also cover outbound local traffic where the source MAC is filled from the outbound interface.
-
 ## Example use cases
 
 * Validate VLAN segmentation.
